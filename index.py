@@ -2,11 +2,13 @@ import time, os
 from fastapi import FastAPI
 from data_type.conversation_request import ConvesationRequest, ConvesationLikeRequest,ConvesationRequestInput, dayLimitBySessionRequest
 from langchain_community.utilities.searchapi import SearchApiAPIWrapper
+from data_type.conversation_request import ConvesationRequest
 from embedding.embedding import LangChainEmbedding
 from infrastructure.defination import LangChainDefination, ModelType
 from langchain.memory import MongoDBChatMessageHistory, ConversationBufferMemory
 from config.constants import *
 from tools.tool import *
+from app import app
 
 from fastapi.responses import JSONResponse
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -34,11 +36,6 @@ llm_chain_rewrite = defination.llm_chain(prompt=defination.prompt(REWRITE_TEMPLA
 
 embedding.load_document(EMBEDDING_DOCUMENT_PATH,EMBEDDING_STORED_PATH)
 
-app = FastAPI(
-  title="LangChain Server",
-  version="1.0",
-  description="A simple api server using Langchain's Runnable interfaces",
-)
 
 # MongoDB configuration
 MONGODB_URL = "mongodb://localhost:27017"
@@ -110,8 +107,6 @@ async def get_recent_sessions(dayLimit: int):
     # Serialize sessions using the custom JSON encoder
     serialized_sessions = json.dumps(recent_sessions, cls=CustomEncoder)
     return JSONResponse(content=json.loads(serialized_sessions), status_code=200)
-    
-
 @app.post("/completion")
 async def completion(req: ConvesationRequest):
     text = req.text
@@ -172,5 +167,4 @@ async def completion(req: ConvesationRequest):
 if __name__ == "__main__":
     
     import uvicorn
-
     uvicorn.run(app, host=HOST, port=8000)

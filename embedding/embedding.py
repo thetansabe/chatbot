@@ -3,8 +3,6 @@ from langchain.document_loaders import TextLoader
 from langchain.embeddings.gpt4all import GPT4AllEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores.chroma import Chroma
-from langchain.schema import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough
 
 class LangChainEmbedding:
     def __init__(self) -> None:
