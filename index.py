@@ -37,14 +37,8 @@ llm_chain_rewrite = defination.llm_chain(prompt=defination.prompt(REWRITE_TEMPLA
 embedding.load_document(EMBEDDING_DOCUMENT_PATH,EMBEDDING_STORED_PATH)
 
 
-# MongoDB configuration
-MONGODB_URL = "mongodb://localhost:27017"
-DATABASE_NAME = "chat_history"
-COLLECTION_NAME = "message_store"
-NEW_COLLECTION_NAME = "new_message_store"
-
 # Connect to MongoDB
-client = AsyncIOMotorClient(MONGODB_URL)
+client = AsyncIOMotorClient(MEMORY_CONNECTION_STRING)
 database = client[DATABASE_NAME]
 collection = database[COLLECTION_NAME]
 new_collection = database[NEW_COLLECTION_NAME]
@@ -61,25 +55,17 @@ class CustomEncoder(json.JSONEncoder):
 async def likeChatSession(req: ConvesationLikeRequest):
     session_id  = req.sessionId
     is_liked = req.isLiked
-
-    # Kiểm tra xem đã tồn tại một bản ghi với session_id và is_liked=True hay không
     existing_message = await new_collection.find_one({"session_id": session_id, "isLiked": True})
-
     if existing_message:
-        # Nếu đã tồn tại, chỉ cần update, không cần thêm
         await new_collection.update_one(
             {"session_id": session_id, "isLiked": True},
             {"$set": {"isLiked": is_liked}}
         )
         return JSONResponse(content={"message": "isLiked updated"}, status_code=200)
     else:
-        # Nếu không có, thêm một bản ghi mới
         current_date = datetime.utcnow()
         new_message = {"session_id": session_id, "isLiked": is_liked, "date": current_date}
-        
-        # Insert document into the new collection
         result = await new_collection.insert_one(new_message)
-
         if result.inserted_id:
             return JSONResponse(content={"message": "Message added successfully"}, status_code=200)
         else:
@@ -88,11 +74,9 @@ async def likeChatSession(req: ConvesationLikeRequest):
 
 @app.get("/get_messages/{session_id}")
 async def get_messages(session_id: str):
-    # Query MongoDB for messages with the specified session_id
     messages = await collection.find({"SessionId": session_id}).to_list(length=None)
     if not messages:
         raise HTTPException(status_code=404, detail="No messages found for the given session_id")
-    # Serialize messages using the custom JSON encoder
     serialized_messages = json.dumps(messages, cls=CustomEncoder)
 
     return JSONResponse(content=json.loads(serialized_messages), status_code=200)
