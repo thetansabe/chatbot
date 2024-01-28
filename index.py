@@ -1,6 +1,6 @@
 import time, os
 from fastapi import FastAPI
-from data_type.conversation_request import ConvesationRequest, ConvesationLikeRequest,ConvesationRequestInput
+from data_type.conversation_request import ConvesationRequest, ConvesationLikeRequest,ConvesationRequestInput, dayLimitBySessionRequest
 from langchain_community.utilities.searchapi import SearchApiAPIWrapper
 from embedding.embedding import LangChainEmbedding
 from infrastructure.defination import LangChainDefination, ModelType
@@ -99,9 +99,8 @@ async def get_messages(session_id: str):
     serialized_messages = json.dumps(messages, cls=CustomEncoder)
 
     return JSONResponse(content=json.loads(serialized_messages), status_code=200)
-
 @app.get("/get_recent_sessions/{days}")
-async def get_recent_sessions(dayLimit:int):
+async def get_recent_sessions(dayLimit: int):
     # Tính ngày 7 ngày trước
     seven_days_ago = datetime.utcnow() - timedelta(days=dayLimit)
     # Truy vấn các session được tạo trong khoảng thời gian 7 ngày trước
@@ -111,6 +110,7 @@ async def get_recent_sessions(dayLimit:int):
     # Serialize sessions using the custom JSON encoder
     serialized_sessions = json.dumps(recent_sessions, cls=CustomEncoder)
     return JSONResponse(content=json.loads(serialized_sessions), status_code=200)
+    
 
 @app.post("/completion")
 async def completion(req: ConvesationRequest):

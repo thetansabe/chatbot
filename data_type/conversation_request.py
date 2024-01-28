@@ -9,6 +9,6 @@ class ConvesationRequestInput(BaseModel):
 class ConvesationLikeRequest(BaseModel):
     sessionId: str
     isLiked: bool
-class dayLimitRequest(BaseModel):
+class dayLimitBySessionRequest(BaseModel):
     sessionId: str
     dayLimit: int
