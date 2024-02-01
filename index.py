@@ -9,6 +9,7 @@ from langchain.memory import MongoDBChatMessageHistory, ConversationBufferMemory
 from config.constants import *
 from tools.tool import *
 from app import app
+from helper.helper import convert_message_format
 
 from fastapi.responses import JSONResponse
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -53,12 +54,12 @@ class CustomEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 @app.put("/likeChatSession")
 async def likeChatSession(req: ConvesationLikeRequest):
-    session_id  = req.sessionId
+    sessionId  = req.sessionId
     is_liked = req.isLiked
-    existing_message = await session_collection.find_one({"session_id": session_id})
+    existing_message = await session_collection.find_one({"sessionId": sessionId})
     if existing_message:
         await session_collection.update_one(
-            {"session_id": session_id},
+            {"sessionId": sessionId},
             {"$set": {"isLiked": is_liked}}
         )
         return JSONResponse(content={"message": "isLiked updated"}, status_code=200)
@@ -66,28 +67,19 @@ async def likeChatSession(req: ConvesationLikeRequest):
         return JSONResponse(content={"message": "Session is not found"}, status_code=404)
 
 
-@app.get("/get_messages/{session_id}")
-async def get_messages(session_id: str):
-    messages = await collection.find({"SessionId": session_id}).to_list(length=None)
+@app.get("/messages/{sessionId}")
+async def messages(sessionId: str):
+    messages = await collection.find({"SessionId": sessionId}).to_list(length=None)
     converted_messages = [convert_message_format(message) for message in messages]
 
     if not messages:
-        raise HTTPException(status_code=404, detail="No messages found for the given session_id")
+        raise HTTPException(status_code=404, detail="No messages found for the given sessionId")
     serialized_messages = json.dumps(converted_messages, cls=CustomEncoder)
     return JSONResponse(content=json.loads(serialized_messages), status_code=200)
 
-def convert_message_format(message):
-    history_data = json.loads(message["History"])
-    converted_message = {
-        "_id": message["_id"],
-        "SessionId": message["SessionId"],
-        "type": history_data["type"],
-        "content": history_data["data"]["content"]
-    }
-    return converted_message
 
-@app.get("/get_all_messages")
-async def get_all_messages():
+@app.get("/messages")
+async def messages():
     messages = await collection.find({}).to_list(length=None)
     converted_messages = [convert_message_format(message) for message in messages]
     if not messages:
@@ -95,8 +87,8 @@ async def get_all_messages():
     serialized_messages = json.dumps(converted_messages, cls=CustomEncoder)
     return JSONResponse(content=json.loads(serialized_messages), status_code=200)
 
-@app.get("/get_recent_sessions/{type}")
-async def get_recent_sessions(type:str):
+@app.get("/recent_sessions/{type}")
+async def recent_sessions(type:str):
     if type == 'today':
         dayLimit = 1
     if type == 'thisweek':
@@ -112,33 +104,33 @@ async def get_recent_sessions(type:str):
     serialized_sessions = json.dumps(recent_sessions, cls=CustomEncoder)
     return JSONResponse(content=json.loads(serialized_sessions), status_code=200)
 
-@app.get("/get_starred_sessions/{userId}")
-async def get_recent_sessions(userId:str):
+@app.get("/starred_sessions/{userId}")
+async def recent_sessions(userId:str):
     recent_sessions = await session_collection.find({"isLiked":True}).to_list(length=None)
     if not recent_sessions:
         raise HTTPException(status_code=404, detail="No recent sessions found")
     serialized_sessions = json.dumps(recent_sessions, cls=CustomEncoder)
     return JSONResponse(content=json.loads(serialized_sessions), status_code=200)
-@app.get("/get_sessions")
-async def get_recent_sessions():
+@app.get("/sessions")
+async def recent_sessions():
     recent_sessions = await session_collection.find({}).to_list(length=None)
     if not recent_sessions:
         raise HTTPException(status_code=404, detail="No sessions found")
     serialized_sessions = json.dumps(recent_sessions, cls=CustomEncoder)
     return JSONResponse(content=json.loads(serialized_sessions), status_code=200)
 
-@app.delete("/delete_session/{session_id}")
-async def delete_session(session_id: str):
-    result = await session_collection.delete_one({"session_id": session_id})
+@app.delete("/delete_session/{sessionId}")
+async def delete_session(sessionId: str):
+    result = await session_collection.delete_one({"sessionId": sessionId})
     if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail=f"No session found for session_id: {session_id}")
-    return {"message": f"Session with session_id: {session_id} deleted successfully"}
+        raise HTTPException(status_code=404, detail=f"No session found for sessionId: {sessionId}")
+    return {"message": f"Session with sessionId: {sessionId} deleted successfully"}
     
 @app.post("/completion")
 async def completion(req: ConvesationRequest):
     text = req.text
     start = time.perf_counter()
-    mongo_history = MongoDBChatMessageHistory(connection_string= MEMORY_CONNECTION_STRING,session_id= str(req.sessionId))
+    mongo_history = MongoDBChatMessageHistory(connection_string= MEMORY_CONNECTION_STRING,session_id= req.sessionId)
     memory = ConversationBufferMemory(
         input_key="user_input",
         chat_memory=mongo_history,
@@ -146,12 +138,10 @@ async def completion(req: ConvesationRequest):
     )
     
     result = llm_chain_tool({"context":tool_context, "user_query": text})
-    print("Tool:" , result["text"])
     if result["text"] != "None":
         cur_tool = next((tool for tool in tools if tool["name"] == result["text"]), None)
         result_of_tool = await cur_tool["func"](query = text,chain= llm_chain_detect,rewrite_chain=llm_chain_rewrite)
         end = time.perf_counter()
-        print(f"Time elapsed: {end - start:.2f} seconds")
         return {
             "response" : result_of_tool,
             "type": "This result from tool",
@@ -160,7 +150,6 @@ async def completion(req: ConvesationRequest):
     else:
         document = embedding.find_document(text)
         result = llm_chain_embedding(document)
-        print("Embedding:" , result["text"])
         if result["text"] != "None":
             mongo_history.add_user_message(text)
             mongo_history.add_ai_message(result["text"])
@@ -175,14 +164,11 @@ async def completion(req: ConvesationRequest):
             conversation = defination.conversation_chain(prompt=defination.conversation_prompt(DEFAULT_TEMPLATE), llm=llm, memory= memory)
             result = conversation({"user_input": text})
             end = time.perf_counter()
-            print(f"Time elapsed: {end - start:.2f} seconds")
-            existing_message = await session_collection.find_one({"session_id": req.sessionId})
-            
+            existing_message = await session_collection.find_one({"sessionId": req.sessionId})
             if existing_message is None:
                 current_date = datetime.utcnow()
-                new_message = {"session_id": req.sessionId, "content":result["text"],"isLiked": False, "date": current_date}
+                new_message = {"sessionId": req.sessionId, "content":result["text"],"isLiked": False, "date": current_date}
                 await session_collection.insert_one(new_message)
-                print(f"New message inserted: {new_message}")
             return {
                 "response" : {
                     "text": result["text"]
