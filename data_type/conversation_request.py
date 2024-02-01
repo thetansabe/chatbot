@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 class ConvesationRequest(BaseModel):
-    sessionId: int
+    sessionId: str
     text: str
 class ConvesationRequestInput(BaseModel):
     sessionId: int
