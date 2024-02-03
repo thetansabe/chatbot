@@ -65,30 +65,30 @@ async def messages(sessionId: str):
         raise HTTPException(status_code=404, detail="No messages found for the given sessionId")
     serialized_messages = json.dumps(converted_messages, cls=CustomEncoder)
     return JSONResponse(content=json.loads(serialized_messages), status_code=200)
+
 #api 2 method get, endpoint: /history/{userId}: get all the sessions from the session collection
 @app.get("/messages/history/{userId}")
 async def all_sessions(userId:str):
     today = datetime.utcnow() - timedelta(days=1)
     thisWeek = datetime.utcnow() - timedelta(days=7)
     thisMonth = datetime.utcnow() - timedelta(days=30)
-    thisYear = datetime.utcnow() - timedelta(days=365)
-    today_sessions = await session_collection.find({"userId":userId, "date": {"$gte": today} }).to_list(length=None)
-    this_week_sessions = await session_collection.find({"userId":userId, "date": {"$gte": thisWeek} }).to_list(length=None)
-    this_month_sessions = await session_collection.find({"userId": userId, "date": {"$gte": thisMonth}}).to_list(length=None)
-    this_year_sessions = await session_collection.find({"userId": userId, "date": {"$gte": thisYear}}).to_list(length=None)
+    
+    today_sessions = await session_collection.find({ "userId": userId, "date": {"$gte": today} }).to_list(length=None)
+    this_week_sessions = await session_collection.find({ "userId": userId, "date": {"$gte": thisWeek} }).to_list(length=None)
+    this_month_sessions = await session_collection.find({ "userId": userId, "date": {"$gte": thisMonth}}).to_list(length=None)
+    
     this_week_sessions = [session for session in this_week_sessions if session not in today_sessions]
     this_month_sessions = [session for session in this_month_sessions if session not in today_sessions and session not in this_week_sessions]
-    this_year_sessions = [session for session in this_month_sessions if session not in today_sessions and session not in this_week_sessions and session not in this_month_sessions]
     
     merged_sessions = {
         'today': json.dumps(today_sessions, cls=CustomEncoder),
         'thisWeek': json.dumps(this_week_sessions, cls=CustomEncoder),
         'thisMonth': json.dumps(this_month_sessions, cls=CustomEncoder),
-        'thisYear': json.dumps(this_year_sessions, cls=CustomEncoder),
     }
+
     if not merged_sessions:
         raise HTTPException(status_code=404, detail="No sessions found")
-    # serialized_sessions = json.dumps(merged_sessions, cls=CustomEncoder)
+
     return JSONResponse(content=merged_sessions, status_code=200)
 
 #api 3 - TESTED DONE, method get, endpoint: /starred/{userId}: get all the starred sessions from the session collection
