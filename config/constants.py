@@ -40,7 +40,10 @@ Human: {user_input}
 Chatbot:"""
 
 MEMORY_CONNECTION_STRING= os.getenv('DOCKER_MONGO_CONN', 'mongodb://localhost:27017') 
-HOST = os.getenv('DOCKER_HOST','localhost')
+DATABASE_NAME = "chat_history"
+COLLECTION_NAME = "message_store"
+SESSSION_COLLECTION_NAME = "session_store"
 
+HOST = os.getenv('DOCKER_HOST','localhost')
 print("Memory connection string: ", MEMORY_CONNECTION_STRING)
 print("Host: ", HOST)

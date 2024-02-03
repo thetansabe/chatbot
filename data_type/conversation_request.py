@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
-class ConvesationRequest(BaseModel):
-    sessionId: int
+class ConversationRequest(BaseModel):
+    sessionId: str
     text: str
+    userId: str
