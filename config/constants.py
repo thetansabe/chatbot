@@ -3,7 +3,7 @@ MODEL_PATH = "./models/gpt4all-falcon-newbpe-q4_0.gguf"
 EMBEDDING_MODEL_PATH = "./models/all-MiniLM-L6-v2-f16.gguf"
 EMBEDDING_DOCUMENT_PATH = "./embedding/QnA.txt"
 EMBEDDING_STORED_PATH = "./chroma_db_stored"
-EMBEDDING_TEMPLATE = """You are a chatbot for e-commerce. Answer the question based on the context. Make the answer more natural to fit the question.
+EMBEDDING_TEMPLATE = """You are a chatbot for elearn. Answer the question based on the context. Make the answer more natural to fit the question.
 If the user's question is not true for the current field, answer will be None
 
 {context}
@@ -43,7 +43,11 @@ MEMORY_CONNECTION_STRING= os.getenv('DOCKER_MONGO_CONN', 'mongodb://localhost:27
 DATABASE_NAME = "chat_history"
 COLLECTION_NAME = "message_store"
 SESSSION_COLLECTION_NAME = "session_store"
+GG_API_KEY = os.getenv('GOOGLE_API_KEY','AIzaSyA82mm8UsuVKi8SOMNlDs8_PKRwUCt6g0U')
+SEARCH_API_KEY = os.getenv('SEARCHAPI_API_KEY','P3svCpvRLHjR5JTvrbEnKBn4')
 
 HOST = os.getenv('DOCKER_HOST','localhost')
+PORT = os.getenv('DOCKER_PORT', 8000)
+
 print("Memory connection string: ", MEMORY_CONNECTION_STRING)
-print("Host: ", HOST)
+print("Path: ", HOST + ":" + str(PORT))

@@ -18,9 +18,9 @@ import json
 from datetime import datetime, timedelta,date
 
 if "GOOGLE_API_KEY" not in os.environ:
-    os.environ["GOOGLE_API_KEY"] = "AIzaSyBTiUCRKEn7jPQqTn2Ok1jWTCXhjMEiHT0"
+    os.environ["GOOGLE_API_KEY"] = GG_API_KEY
 if "SEARCHAPI_API_KEY" not in os.environ:
-    os.environ["SEARCHAPI_API_KEY"] = "T61bzfFQuTuC5wRYxRsJj83A"
+    os.environ["SEARCHAPI_API_KEY"] = SEARCH_API_KEY
 
 #default defination
 apiVersion = "1"
@@ -193,7 +193,7 @@ async def recent_sessions(dayLimit: int):
         raise HTTPException(status_code=404, detail="No recent sessions found")
     serialized_sessions = json.dumps(recent_sessions, cls=CustomEncoder)
     return JSONResponse(content=json.loads(serialized_sessions), status_code=200)
+
 if __name__ == "__main__":
-    
     import uvicorn
-    uvicorn.run(app, host=HOST, port=8000)
+    uvicorn.run(app, host=HOST, port=PORT)
