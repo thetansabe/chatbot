@@ -1,7 +1,6 @@
 import time, os
-from fastapi import FastAPI,HTTPException
+from fastapi import HTTPException
 from data_type.conversation_request import ConversationRequest
-from langchain_community.utilities.searchapi import SearchApiAPIWrapper
 from data_type.conversation_request import ConversationRequest
 from embedding.embedding import LangChainEmbedding
 from infrastructure.defination import LangChainDefination, ModelType

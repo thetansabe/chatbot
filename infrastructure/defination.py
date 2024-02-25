@@ -1,5 +1,5 @@
 
-from langchain.chains import LLMChain, ConversationChain
+from langchain.chains import LLMChain
 from langchain.llms.gpt4all import GPT4All
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.memory import MongoDBChatMessageHistory

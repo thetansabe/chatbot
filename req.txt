@@ -1,8 +1,8 @@
-langchain
-gpt4all
-chromadb
-fastapi
-langchain-google-genai
-pillow
-pymongo
-motor
+langchain==0.1.1
+gpt4all==2.1.0
+chromadb==0.4.22
+fastapi==0.109.0
+langchain-google-genai==0.0.6
+pillow==10.2.0
+pymongo==4.6.1
+motor==3.3.2

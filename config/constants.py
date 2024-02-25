@@ -3,7 +3,7 @@ MODEL_PATH = "./models/gpt4all-falcon-newbpe-q4_0.gguf"
 EMBEDDING_MODEL_PATH = "./models/all-MiniLM-L6-v2-f16.gguf"
 EMBEDDING_DOCUMENT_PATH = "./embedding/QnA.txt"
 EMBEDDING_STORED_PATH = "./chroma_db_stored"
-EMBEDDING_TEMPLATE = """You are a chatbot for elearn. Answer the question based on the context. Make the answer more natural to fit the question.
+EMBEDDING_TEMPLATE = """You are a chatbot for elearning. Answer the question based on the context. Make the answer more natural to fit the question.
 If the user's question is not true for the current field, answer will be None
 
 {context}
