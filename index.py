@@ -34,15 +34,13 @@ llm_chain_tool = defination.llm_chain(prompt=defination.prompt(TOOL_TEMPLATE),ll
 llm_chain_detect = defination.llm_chain(prompt=defination.prompt(DETECT_ENTITY_TEMPLATE),llm=llm_local)
 llm_chain_rewrite = defination.llm_chain(prompt=defination.prompt(REWRITE_TEMPLATE),llm=llm)
 
-embedding.load_document(EMBEDDING_DOCUMENT_PATH,EMBEDDING_STORED_PATH)
-
+embedding.load_S3_document("test_luat_dat.txt",EMBEDDING_STORED_PATH)
 
 #Connect to MongoDB
 client = AsyncIOMotorClient(MEMORY_CONNECTION_STRING)
 database = client[DATABASE_NAME]
 collection = database[COLLECTION_NAME]
 session_collection = database[SESSSION_COLLECTION_NAME]
-userId  = 'U0123'
 
 #Custom JSON Encoder
 class CustomEncoder(json.JSONEncoder):
