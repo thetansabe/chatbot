@@ -5,7 +5,7 @@ from fastapi import UploadFile
 from typing import List
 
 def check_valid_file_type(files: List[UploadFile]):
-    valid_types = ["application/pdf", "application/msword", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
+    valid_types = ["text/plain"]
     
     for file in files:
         if file.content_type not in valid_types:

@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 import json
 from datetime import datetime, timedelta
+from boto3 import client
 
 if "GOOGLE_API_KEY" not in os.environ:
     os.environ["GOOGLE_API_KEY"] = GG_API_KEY
@@ -33,7 +34,6 @@ llm_chain_detect = defination.llm_chain(prompt=defination.prompt(DETECT_ENTITY_T
 llm_chain_rewrite = defination.llm_chain(prompt=defination.prompt(REWRITE_TEMPLATE),llm=llm)
 
 embedding.load_document(EMBEDDING_DOCUMENT_PATH,EMBEDDING_STORED_PATH)
-
 ### Setup MongoDB
 db_client = AsyncIOMotorClient(MEMORY_CONNECTION_STRING)
 database = db_client[DATABASE_NAME]
@@ -41,7 +41,7 @@ collection = database[COLLECTION_NAME]
 session_collection = database[SESSSION_COLLECTION_NAME]
 file_collection = database[FILE_COLLECTION_NAME]
 
-#api 1: TESTED DONE method get, endpoint: /all/{sessionId}
+#api 1: TESTED DONE method get messages from sessionId
 @app.get("/messages/{sessionId}")
 async def messages(sessionId: str):
     messages = await collection.find({"SessionId": sessionId}).to_list(length=None)
@@ -71,9 +71,6 @@ async def all_sessions(userId:str):
         'thisWeek': json.dumps(this_week_sessions, cls=CustomEncoder),
         'thisMonth': json.dumps(this_month_sessions, cls=CustomEncoder),
     }
-
-    if not merged_sessions:
-        raise HTTPException(status_code=404, detail="No sessions found")
 
     return JSONResponse(content=merged_sessions, status_code=200)
 
@@ -193,19 +190,18 @@ async def recent_sessions(dayLimit: int):
 @app.post("/upload_files")
 async def upload_files(files: List[UploadFile], userId: Annotated[str, Form()]):
     if not check_valid_file_type(files):
-        raise HTTPException(status_code=400, detail="Failed! Only accept pdf, doc, docx, txt files.")
+        raise HTTPException(status_code=400, detail="Failed! Only accept text files.")
     
-        
-    # s3 = client("s3", aws_access_key_id=AWS_ACCESS_KEY, aws_secret_access_key=AWS_SECRET_KEY)
+    s3 = client("s3", aws_access_key_id=AWS_ACCESS_KEY, aws_secret_access_key=AWS_SECRET_KEY)
     for file in files:
-        existing_file = await file_collection.find_one({"userId": userId, "fileName": files[0].filename})
+        existing_file = await file_collection.find_one({"userId": userId, "fileName": file.filename})
         if existing_file:
             raise HTTPException(status_code=400, detail=f"Failed! {file.filename} existed.")
         
         new_data = {"userId": userId, "fileName": file.filename, "lastModifiedAt": datetime.utcnow()}
         print(new_data)
         await file_collection.insert_one(new_data)
-        # s3.upload_fileobj(file.file, S3_BUCKET_NAME, file.filename)
+        s3.upload_fileobj(file.file, S3_BUCKET_NAME, file.filename)
     return JSONResponse(content={"message": "files upload successfully"}, status_code=200)
 
 #api 11 - train files from S3
@@ -213,12 +209,15 @@ async def upload_files(files: List[UploadFile], userId: Annotated[str, Form()]):
 async def train_files(userId: str):
     files = await file_collection.find({"userId": userId}).to_list(length=None)
     if not files or len(files) < 1:
-        raise HTTPException(status_code=404, detail="No files found")
+        raise HTTPException(status_code=404, detail="no file to train")
     
-    # for file in files:
-    #     embedding.load_S3_document(file["fileName"],EMBEDDING_STORED_PATH)
-    serialized_files = json.dumps(files, cls=CustomEncoder)
-    return JSONResponse(content=json.loads(serialized_files), status_code=200)
+    try:
+        for file in files:
+            embedding.load_S3_document(file["fileName"],EMBEDDING_STORED_PATH)
+        return JSONResponse(content={"message": "files trained successfully"}, status_code=200)
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=f"Internal Server Error")
 
 if __name__ == "__main__":
     import uvicorn
