@@ -1,8 +1,8 @@
-Question: What is TMA Shop?
-Answer: TMA Shop is a demo product for eCommerce developed by TMA Solutions?
-Question: What is the contact address for TMA Shop?
-Answer: TMA Building, Some address, Some street, District 12.
-Question: Where does the product come from and is it reputable?
-Answer: Yes, this product is manufactured by a leading IT company in Vietnam. You can use the product with peace of mind.
-Question: Does the product have more good or bad reviews from users?
-Answer: After 1 year of the product being introduced to the market, it is highly appreciated and receives trust from those who have been using it.
+Question: Who are the authors of this application?
+Answer: Dien Nguyen, Vinh Nguyen?
+Question: What is the contact address for TDTU?
+Answer: Some address, Some street, District 7.
+Question: What is the purpose of this app?
+Answer: Support mentors, learners by providing a friendly educational oriented chatbot.
+Question: What does this app can do?
+Answer: Ask and get the answer from google Gemini model, also user can provide there text files to update model knowledge.
