@@ -43,8 +43,13 @@ MEMORY_CONNECTION_STRING= os.getenv('DOCKER_MONGO_CONN', 'mongodb://localhost:27
 DATABASE_NAME = "chat_history"
 COLLECTION_NAME = "message_store"
 SESSSION_COLLECTION_NAME = "session_store"
+FILE_COLLECTION_NAME = "file_store"
+
 GG_API_KEY = os.getenv('GOOGLE_API_KEY','AIzaSyA82mm8UsuVKi8SOMNlDs8_PKRwUCt6g0U')
 SEARCH_API_KEY = os.getenv('SEARCHAPI_API_KEY','P3svCpvRLHjR5JTvrbEnKBn4')
+AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY','AKIAVUXB5WTK6M7HBWOI')
+AWS_SECRET_KEY = os.getenv('AWS_SECRET_KEY','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')
+S3_BUCKET_NAME = os.getenv('S3_BUCKET_NAME','first-ntd')
 
 HOST = os.getenv('DOCKER_HOST','localhost')
 PORT = os.getenv('DOCKER_PORT', 8000)

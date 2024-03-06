@@ -1,5 +1,6 @@
 
-from langchain.document_loaders import TextLoader
+from config.constants import AWS_ACCESS_KEY, AWS_SECRET_KEY, S3_BUCKET_NAME
+from langchain_community.document_loaders import TextLoader, S3FileLoader
 from langchain.embeddings.gpt4all import GPT4AllEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores.chroma import Chroma
@@ -10,6 +11,14 @@ class LangChainEmbedding:
 
     def load_document(self, document_path, stored_path):
         raw_documents = TextLoader(document_path).load()
+        text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+        documents = text_splitter.split_documents(raw_documents)
+        self.stored = Chroma.from_documents(documents, GPT4AllEmbeddings(), persist_directory=stored_path)
+
+    def load_S3_document(self, file_name, stored_path):
+        raw_documents = S3FileLoader(
+            S3_BUCKET_NAME, file_name, aws_access_key_id=AWS_ACCESS_KEY, aws_secret_access_key=AWS_SECRET_KEY
+        ).load()
         text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
         documents = text_splitter.split_documents(raw_documents)
         self.stored = Chroma.from_documents(documents, GPT4AllEmbeddings(), persist_directory=stored_path)

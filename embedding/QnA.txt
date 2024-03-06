@@ -1,42 +1,8 @@
-Question: What is TMA Shop?
-Answer: TMA Shop is a demo product for eCommerce developed by TMA Solutions?
-Question: What is the contact address for TMA Shop?
-Answer: TMA Building, Quang Trung Software Park, No. 1 To Ky, District 12.
-Question: Where does the product come from and is it reputable?
-Answer: Yes, this product is manufactured by a leading IT company in Vietnam. You can use the product with peace of mind.
-Question: Does the product have more good or bad reviews from users?
-Answer: After 1 year of the product being introduced to the market, it is highly appreciated and receives trust from those who have been using it.
-Question: What is the use of product eCommerce? How does it help my problem?
-Answer: Yes, this TMA Shop product is from a store/company that specializes in buying and selling on e-commerce sites. In particular, it is very suitable for people like you who want to do business.
-Question: Can I trust the product?
-Answer: Yes, our products are applied with the latest technology to ensure information security. You can completely trust the use and quality of this product.
-Question: Why are our prices more expensive than others?
-Answer: Yes, because our products use the latest technology, and have the highest product security, the products always ensure quality and safety for use.
-Question: Are there any similar products on the market?
-Answer: Yes, there are some similar products on the market, but compared to our products, those products are not highly rated, and often have problems with information security.
-Question: Which customers is the product aimed at?
-Answer: Yes, this product is an e-commerce site, it is suitable for people who want to do business online.
-Question: Are products discounted?
-Answer: Yes. This is the price listed on the market so there is no discount.
-Question: What is the return policy?
-Answer: Yes, to understand the return policy, you can visit the website www.tma.com.vn, or call: +84345678901 to meet a consultant directly.
-Question: Is the product as described?
-Answer: We guarantee the product is as described.
-Question: What if the product does not match the description after receiving the goods?
-Answer: If the product is not as described, please provide product information, images, and videos. After we check the information, if it is correct as you stated, we will proceed to return it to you.
-Question: What is the product warranty policy?
-Answer: Yes, the product will be warranted for 1 year from the date of purchase.
-Question: Is the product durable, can it be stored for a long time?
-Answer: Yes, the product depends on the choice of server for you to deploy the product.
-Question: What if after purchasing the product I still can't use it?
-Answer: Yes, you can contact the company, the company will send staff to directly support you.
-Question: How long will it take for me to receive the goods?
-Answer: From 3 to 5 days you will receive the product.
-Question: What are the available payment methods?
-Answer: The available payment methods are Web bank payment (Vietcombank, BIDV, Agribank, etc.) and Card payment (Visa, Mastercard, JCB, etc.).
-Question: Can I pay in installments?
-Answer: Yes, we currently do not support the installment payment policy. We apologize for this inconvenience.
-Question: Can I receive any incentives after purchasing the product?
-Answer: Yes, after purchasing the product you will receive a 10% discount voucher for the next product at TMA Shop, and an umbrella.
-Question: I will order products from TMA Shop.
-Answer: Thank you very much for your trust in our products.
+Question: Who are the authors of this application?
+Answer: Dien Nguyen, Vinh Nguyen?
+Question: What is the contact address for TDTU?
+Answer: Some address, Some street, District 7.
+Question: What is the purpose of this app?
+Answer: Support mentors, learners by providing a friendly educational oriented chatbot.
+Question: What does this app can do?
+Answer: Ask and get the answer from google Gemini model, also user can provide there text files to update model knowledge.
