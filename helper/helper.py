@@ -4,6 +4,13 @@ from bson import ObjectId
 from fastapi import UploadFile
 from typing import List
 
+def check_s3_file(s3, bucket_name, key):
+    try:
+        s3.head_object(Bucket=bucket_name, Key=key)
+        return True
+    except Exception as e:
+        return False
+
 def check_valid_file_type(files: List[UploadFile]):
     valid_types = ["text/plain"]
     
