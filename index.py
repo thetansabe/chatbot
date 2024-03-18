@@ -9,12 +9,13 @@ from langchain.memory import MongoDBChatMessageHistory, ConversationBufferMemory
 from config.constants import *
 from tools.tool import *
 from app import app
-from helper.helper import CustomEncoder, check_valid_file_type, convert_message_format
+from helper.helper import CustomEncoder, check_s3_file, check_valid_file_type, convert_message_format
 from fastapi.responses import JSONResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 import json
 from datetime import datetime, timedelta
 from boto3 import client
+import traceback
 
 if "GOOGLE_API_KEY" not in os.environ:
     os.environ["GOOGLE_API_KEY"] = GG_API_KEY
@@ -34,12 +35,16 @@ llm_chain_detect = defination.llm_chain(prompt=defination.prompt(DETECT_ENTITY_T
 llm_chain_rewrite = defination.llm_chain(prompt=defination.prompt(REWRITE_TEMPLATE),llm=llm)
 
 embedding.load_document(EMBEDDING_DOCUMENT_PATH,EMBEDDING_STORED_PATH)
+
 ### Setup MongoDB
 db_client = AsyncIOMotorClient(MEMORY_CONNECTION_STRING)
 database = db_client[DATABASE_NAME]
 collection = database[COLLECTION_NAME]
 session_collection = database[SESSSION_COLLECTION_NAME]
 file_collection = database[FILE_COLLECTION_NAME]
+
+### Setup S3
+s3 = client("s3", aws_access_key_id=AWS_ACCESS_KEY, aws_secret_access_key=AWS_SECRET_KEY)
 
 #api 1: TESTED DONE method get messages from sessionId
 @app.get("/messages/{sessionId}")
@@ -165,8 +170,11 @@ async def completion(req: ConversationRequest):
             conversation = defination.conversation_chain(prompt=defination.conversation_prompt(DEFAULT_TEMPLATE), llm=llm, memory= memory)
             result = conversation({"user_input": text})
 
-            new_message = {"sessionId": req.sessionId, "content":text,"isLiked": False, "date": current_date, "userId": req.userId}
-            await session_collection.insert_one(new_message)
+            existing_message = await session_collection.find_one({"sessionId": req.sessionId})
+            if existing_message is None:
+                current_date = datetime.utcnow()
+                new_message = {"sessionId": req.sessionId, "content":req.text,"isLiked": False, "date": current_date, "userId": req.userId}
+                await session_collection.insert_one(new_message)
 
             return {
                 "response" : {
@@ -192,7 +200,6 @@ async def upload_files(files: List[UploadFile], userId: Annotated[str, Form()]):
     if not check_valid_file_type(files):
         raise HTTPException(status_code=400, detail="Failed! Only accept text files.")
     
-    s3 = client("s3", aws_access_key_id=AWS_ACCESS_KEY, aws_secret_access_key=AWS_SECRET_KEY)
     for file in files:
         existing_file = await file_collection.find_one({"userId": userId, "fileName": file.filename})
         if existing_file:
@@ -213,10 +220,12 @@ async def train_files(userId: str):
     
     try:
         for file in files:
+            if(not check_s3_file(s3, S3_BUCKET_NAME, file["fileName"])):
+                continue
             embedding.load_S3_document(file["fileName"],EMBEDDING_STORED_PATH)
         return JSONResponse(content={"message": "files trained successfully"}, status_code=200)
     except Exception as e:
-        print(e)
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Internal Server Error")
 
 if __name__ == "__main__":
