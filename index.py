@@ -9,7 +9,7 @@ from langchain.memory import MongoDBChatMessageHistory, ConversationBufferMemory
 from config.constants import *
 from tools.tool import *
 from app import app
-from helper.helper import CustomEncoder, check_s3_file, check_valid_file_type, convert_message_format
+from helper.helper import CustomEncoder, check_s3_file, check_valid_file_type, convert_message_format, ocr_text_extraction
 from fastapi.responses import JSONResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 import json
@@ -125,64 +125,74 @@ async def rename_session(req: ConversationRequest):
 #api 8 - TESTED DONE method post completion (ask the gemini chatbot)
 @app.post("/completion")
 async def completion(req: ConversationRequest):
-    text = req.text
+    try:
+        text = req.text
 
-    mongo_history = MongoDBChatMessageHistory(connection_string= MEMORY_CONNECTION_STRING,session_id= req.sessionId)
-    memory = ConversationBufferMemory(
-        input_key="user_input",
-        chat_memory=mongo_history,
-        memory_key='chat_history'
-    )
-    
-    current_date = datetime.utcnow()
-
-    result = llm_chain_tool({"context":tool_context, "user_query": text})
-    if result["text"] != "None":
-        cur_tool = next((tool for tool in tools if tool["name"] == result["text"]), None)
-        result_of_tool = await cur_tool["func"](query = text,chain= llm_chain_detect,rewrite_chain=llm_chain_rewrite)
+        mongo_history = MongoDBChatMessageHistory(connection_string= MEMORY_CONNECTION_STRING,session_id= req.sessionId)
+        memory = ConversationBufferMemory(
+            input_key="user_input",
+            chat_memory=mongo_history,
+            memory_key='chat_history'
+        )
         
-        new_message = {"sessionId": req.sessionId, "content":text,"isLiked": False, "date": current_date, "userId": req.userId}
-        await session_collection.insert_one(new_message)
+        current_date = datetime.utcnow()
 
-        return {
-            "response" : result_of_tool,
-            "type": "This result from tool",
-            "sessionId": req.sessionId
-        }
-    else:
-        document = embedding.find_document(text)
-        result = llm_chain_embedding(document)
+        result = llm_chain_tool({"context":tool_context, "user_query": text})
         if result["text"] != "None":
-            mongo_history.add_user_message(text)
-            mongo_history.add_ai_message(result["text"])
-
+            cur_tool = next((tool for tool in tools if tool["name"] == result["text"]), None)
+            result_of_tool = await cur_tool["func"](query = text,chain= llm_chain_detect,rewrite_chain=llm_chain_rewrite)
+            
             new_message = {"sessionId": req.sessionId, "content":text,"isLiked": False, "date": current_date, "userId": req.userId}
             await session_collection.insert_one(new_message)
 
             return {
-                "response" : {
-                    "text": result["text"]
-                },
-                "type": "This result from embedding",
+                "response" : result_of_tool,
+                "type": "This result from tool",
                 "sessionId": req.sessionId
             }
         else:
-            conversation = defination.conversation_chain(prompt=defination.conversation_prompt(DEFAULT_TEMPLATE), llm=llm, memory= memory)
-            result = conversation({"user_input": text})
+            document = embedding.find_document(text)
+            result = llm_chain_embedding(document)
+            if result["text"] != "None":
+                mongo_history.add_user_message(text)
+                mongo_history.add_ai_message(result["text"])
 
-            existing_message = await session_collection.find_one({"sessionId": req.sessionId})
-            if existing_message is None:
-                current_date = datetime.utcnow()
-                new_message = {"sessionId": req.sessionId, "content":req.text,"isLiked": False, "date": current_date, "userId": req.userId}
+                new_message = {"sessionId": req.sessionId, "content":text,"isLiked": False, "date": current_date, "userId": req.userId}
                 await session_collection.insert_one(new_message)
 
-            return {
+                return {
+                    "response" : {
+                        "text": result["text"]
+                    },
+                    "type": "This result from embedding",
+                    "sessionId": req.sessionId
+                }
+            else:
+                conversation = defination.conversation_chain(prompt=defination.conversation_prompt(DEFAULT_TEMPLATE), llm=llm, memory= memory)
+                result = conversation({"user_input": text})
+
+                existing_message = await session_collection.find_one({"sessionId": req.sessionId})
+                if existing_message is None:
+                    current_date = datetime.utcnow()
+                    new_message = {"sessionId": req.sessionId, "content":req.text,"isLiked": False, "date": current_date, "userId": req.userId}
+                    await session_collection.insert_one(new_message)
+
+                return {
+                    "response" : {
+                        "text": result["text"]
+                    },
+                    "type": "This result from conversation",
+                    "sessionId": req.sessionId
+                }
+    except Exception as e:
+        print(traceback.format_exc())
+        return {
                 "response" : {
-                    "text": result["text"]
+                    "text": "Sorry, I can't understand your question. Please try again."
                 },
                 "type": "This result from conversation",
                 "sessionId": req.sessionId
-            }
+        }
 
 #api 9 get the recent sessions by type
 @app.get("/recent_sessions/{type}")
@@ -198,7 +208,7 @@ async def recent_sessions(dayLimit: int):
 @app.post("/upload_files")
 async def upload_files(files: List[UploadFile], userId: Annotated[str, Form()]):
     if not check_valid_file_type(files):
-        raise HTTPException(status_code=400, detail="Failed! Only accept text files.")
+        raise HTTPException(status_code=400, detail="Failed! Only accept .txt files.")
     
     for file in files:
         existing_file = await file_collection.find_one({"userId": userId, "fileName": file.filename})
@@ -227,6 +237,33 @@ async def train_files(userId: str):
     except Exception as e:
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Internal Server Error")
+
+#api 12 - upload image and return extracted text
+@app.post("/extract_image")
+async def extract_image(file: UploadFile):
+    try:
+        #check image file type
+        valid_image = ["image/jpeg", "image/png", "image/jpg"]
+        if file.content_type not in valid_image:
+            raise HTTPException(status_code=400, detail="Invalid file type. Only accept .jpeg, .png, .jpg")
+        
+        #extract text from image
+        image = await file.read()
+        result = await ocr_text_extraction(image)
+        return JSONResponse(content={"message": result}, status_code=200)
+    except Exception as e:
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Failed! Please choose another image.")
+
+#api 13 - train image content
+@app.post("/train_image")
+async def train_image(content: str):
+    try:
+        embedding.load_text_document(content,EMBEDDING_STORED_PATH)
+        return JSONResponse(content={"message": "Image content trained successfully"}, status_code=200)
+    except Exception as e:
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Train Failed")
 
 if __name__ == "__main__":
     import uvicorn

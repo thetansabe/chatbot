@@ -4,6 +4,7 @@ from langchain_community.document_loaders import TextLoader, S3FileLoader
 from langchain.embeddings.gpt4all import GPT4AllEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores.chroma import Chroma
+from langchain.docstore.document import Document
 
 class LangChainEmbedding:
     def __init__(self) -> None:
@@ -28,3 +29,8 @@ class LangChainEmbedding:
         documents = self.stored.similarity_search_by_vector(embedding_vector, k=1)
         context = documents[0].page_content.replace("Question: ","").replace("Answer: ","")
         return {"context": context,"user_question":input}
+    
+    def load_text_document(self, text, stored_path):
+        text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+        doc =  text_splitter.create_documents([text])
+        self.stored = Chroma.from_documents(doc, GPT4AllEmbeddings(), persist_directory=stored_path)

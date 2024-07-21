@@ -3,6 +3,7 @@ from datetime import datetime, date
 from bson import ObjectId
 from fastapi import UploadFile
 from typing import List
+import easyocr
 
 def check_s3_file(s3, bucket_name, key):
     try:
@@ -29,6 +30,18 @@ def convert_message_format(message):
         "content": history_data["data"]["content"]
     }
     return converted_message
+
+async def ocr_text_extraction(image):
+    try:
+        reader = easyocr.Reader(['en', 'vi'], gpu=False)
+        result = reader.readtext(image)
+        text = ""
+        for detection in result:
+            text += detection[1] + ". "
+        return text
+    except Exception as e:
+        print("EasyOCR Error: " + e)
+        return "No result. Please provide clearer image."
 
 #Custom JSON Encoder
 class CustomEncoder(json.JSONEncoder):
